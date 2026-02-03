@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 
 interface ValentineButtonsProps {
@@ -7,9 +7,8 @@ interface ValentineButtonsProps {
 
 const ValentineButtons = ({ onYesClick }: ValentineButtonsProps) => {
   const [noButtonPosition, setNoButtonPosition] = useState({ x: 0, y: 0 });
-  const [isHoveringNo, setIsHoveringNo] = useState(false);
-  const noButtonRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const noButtonRef = useRef<HTMLButtonElement>(null);
 
   const moveNoButton = () => {
     if (!containerRef.current || !noButtonRef.current) return;
@@ -17,31 +16,26 @@ const ValentineButtons = ({ onYesClick }: ValentineButtonsProps) => {
     const container = containerRef.current.getBoundingClientRect();
     const button = noButtonRef.current.getBoundingClientRect();
     
-    // Calculate available space
-    const maxX = container.width - button.width - 20;
-    const maxY = 150; // Limit vertical movement
+    // Calculate available space for movement
+    const maxX = (container.width / 2) - (button.width / 2) - 20;
+    const maxY = 80;
 
-    // Generate random position within bounds
-    const newX = (Math.random() - 0.5) * maxX;
-    const newY = (Math.random() - 0.5) * maxY;
+    // Generate random position, ensuring it moves away
+    const newX = (Math.random() - 0.5) * 2 * maxX;
+    const newY = (Math.random() - 0.5) * 2 * maxY;
 
     setNoButtonPosition({ x: newX, y: newY });
-  };
-
-  const handleNoHover = () => {
-    setIsHoveringNo(true);
-    moveNoButton();
   };
 
   return (
     <div 
       ref={containerRef}
-      className="flex flex-col sm:flex-row items-center justify-center gap-6 relative min-h-[200px] w-full max-w-md mx-auto"
+      className="relative flex flex-row items-center justify-center gap-8 min-h-[180px] w-full"
     >
       {/* Yes Button */}
       <motion.button
         onClick={onYesClick}
-        className="btn-yes min-w-[140px] relative overflow-hidden group"
+        className="btn-yes min-w-[140px] relative overflow-hidden group z-10"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         initial={{ opacity: 0, y: 20 }}
@@ -57,20 +51,20 @@ const ValentineButtons = ({ onYesClick }: ValentineButtonsProps) => {
       {/* No Button - Escapes cursor */}
       <motion.button
         ref={noButtonRef}
-        onMouseEnter={handleNoHover}
+        onMouseEnter={moveNoButton}
         onTouchStart={moveNoButton}
-        className="btn-no min-w-[140px] cursor-pointer"
+        className="btn-no min-w-[140px] cursor-pointer z-10"
         animate={{
           x: noButtonPosition.x,
           y: noButtonPosition.y,
         }}
         transition={{
           type: "spring",
-          stiffness: 300,
-          damping: 20,
+          stiffness: 400,
+          damping: 25,
         }}
         initial={{ opacity: 0, y: 20 }}
-        whileHover={{ scale: isHoveringNo ? 1 : 1.05 }}
+        whileHover={{ scale: 1.05 }}
       >
         No 😢
       </motion.button>
