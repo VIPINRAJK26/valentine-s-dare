@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 
 interface ValentineButtonsProps {
@@ -6,68 +6,105 @@ interface ValentineButtonsProps {
 }
 
 const ValentineButtons = ({ onYesClick }: ValentineButtonsProps) => {
-  const [noButtonPosition, setNoButtonPosition] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
-  const noButtonRef = useRef<HTMLButtonElement>(null);
+  const noBtnRef = useRef<HTMLButtonElement>(null);
 
-  const moveNoButton = () => {
-    if (!containerRef.current || !noButtonRef.current) return;
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [showMsg, setShowMsg] = useState(false);
+
+  const repelButton = (e: React.MouseEvent) => {
+    if (!containerRef.current || !noBtnRef.current) return;
 
     const container = containerRef.current.getBoundingClientRect();
-    const button = noButtonRef.current.getBoundingClientRect();
-    
-    // Calculate available space for movement
-    const maxX = (container.width / 2) - (button.width / 2) - 20;
-    const maxY = 80;
+    const btn = noBtnRef.current.getBoundingClientRect();
 
-    // Generate random position, ensuring it moves away
-    const newX = (Math.random() - 0.5) * 2 * maxX;
-    const newY = (Math.random() - 0.5) * 2 * maxY;
+    const btnCX = btn.left + btn.width / 2;
+    const btnCY = btn.top + btn.height / 2;
 
-    setNoButtonPosition({ x: newX, y: newY });
+    const dx = e.clientX - btnCX;
+    const dy = e.clientY - btnCY;
+    const distance = Math.hypot(dx, dy);
+
+    const dangerRadius = 200; // ⬅️ BIGGER
+    const panicRadius = 90;
+
+    const maxX = container.width / 2 - btn.width / 2 - 20;
+    const maxY = container.height / 2 - btn.height / 2 - 20;
+
+    // 🚨 PANIC TELEPORT
+    if (distance < panicRadius) {
+      setPos({
+        x: (Math.random() - 0.5) * 2 * maxX,
+        y: (Math.random() - 0.5) * 2 * maxY,
+      });
+      return;
+    }
+
+    if (distance < dangerRadius) {
+      const strength = (dangerRadius - distance) / dangerRadius; // 0 → 1
+      const angle = Math.atan2(dy, dx);
+
+      const moveX = -Math.cos(angle) * 260 * strength;
+      const moveY = -Math.sin(angle) * 160 * strength;
+
+      setPos((prev) => ({
+        x: Math.max(-maxX, Math.min(maxX, prev.x + moveX)),
+        y: Math.max(-maxY, Math.min(maxY, prev.y + moveY)),
+      }));
+    }
+  };
+
+  // ❌ IF USER SOMEHOW CLICKS
+  const handleNoClick = () => {
+    setShowMsg(true);
+
+    setTimeout(() => setShowMsg(false), 1500);
+
+    // Teleport away instantly
+    setPos({
+      x: (Math.random() - 0.5) * 200,
+      y: (Math.random() - 0.5) * 100,
+    });
   };
 
   return (
-    <div 
+    <div
       ref={containerRef}
-      className="relative flex flex-row items-center justify-center gap-8 min-h-[180px] w-full"
+      onMouseMove={repelButton}
+      className="relative flex justify-center items-center gap-8 min-h-[200px] w-full"
     >
-      {/* Yes Button */}
+      {/* YES */}
       <motion.button
         onClick={onYesClick}
-        className="btn-yes min-w-[140px] relative overflow-hidden group z-10"
+        className="btn-yes min-w-[140px] z-10"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
       >
-        <span className="relative z-10">Yes! 💕</span>
-        <motion.div
-          className="absolute inset-0 bg-rose-dark opacity-0 group-hover:opacity-20 transition-opacity"
-        />
+        Yes 💕
       </motion.button>
 
-      {/* No Button - Escapes cursor */}
+      {/* NO */}
       <motion.button
-        ref={noButtonRef}
-        onMouseEnter={moveNoButton}
-        onTouchStart={moveNoButton}
-        className="btn-no min-w-[140px] cursor-pointer z-10"
-        animate={{
-          x: noButtonPosition.x,
-          y: noButtonPosition.y,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 400,
-          damping: 25,
-        }}
-        initial={{ opacity: 0, y: 20 }}
-        whileHover={{ scale: 1.05 }}
+        ref={noBtnRef}
+        onMouseDown={handleNoClick} // ⬅️ intercept
+        className="btn-no min-w-[140px] z-10 select-none"
+        animate={{ x: pos.x, y: pos.y }}
+        transition={{ type: "spring", stiffness: 700, damping: 30 }}
+        style={{ pointerEvents: "auto" }} // needed for message trigger
       >
         No 😢
       </motion.button>
+
+      {/* MESSAGE */}
+      {showMsg && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="absolute top-full mt-3 text-sm text-rose-500 font-medium"
+        >
+          ❌ No is not an option
+        </motion.div>
+      )}
     </div>
   );
 };
