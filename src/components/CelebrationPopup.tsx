@@ -87,7 +87,7 @@ const CelebrationPopup = ({ isOpen, onClose }: CelebrationPopupProps) => {
                   transition={{ delay: 0.4 }}
                   className="text-xl md:text-2xl text-foreground mb-6"
                 >
-                  You just made someone's heart flutter! 💕
+                  You just made My heart flutter! 💕
                 </motion.p>
 
                 <motion.div
